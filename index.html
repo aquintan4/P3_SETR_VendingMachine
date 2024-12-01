@@ -97,12 +97,6 @@
             <p>Las transiciones entre los estados se hacen con la función <span class="highlight">change_state</span>. Otra parte del código a la que he dado especial importancia es a evitar el uso de <span class="highlight">delay()</span> ya que son funciones bloqueantes, y ya conocemos mecanismos para mejorar este comportamiento de espera activa.</p>
         </div>
 
-        <div class="link-container">
-            <a href="https://www.dropbox.com/scl/fi/d2fmhvicaarnzbaxp98q6/resultado_p3.mp4?rlkey=6sfvnkcqr1b9f9w2v4311osy5&st=zfmcklaa&dl=0" target="_blank">
-                Ver video del resultado de la práctica
-            </a>
-        </div>
-
         <h2>3. Manejo de Interrupciones</h2>
             <p>Se han utilizado interrupciones de hardware para detectar cambios en los pines físicos de entrada, como el pin del joystick y el del botón, con el objetivo de evitar el polling y reducir los ciclos de sondeo. Esto no solo ayuda a ahorrar energía, sino que también permite una mayor escalabilidad del código. Para manejar estas interrupciones, se ejecutan dos subrutinas de servicio de interrupción (ISR): <span class="highlight">button_change()</span> y <span class="highlight">joy_pressed()</span>.</p>
             <p>Gracias a las interrupciones, podemos atender eventos externos sin descuidar el ciclo principal. Dado que los pines de la placa deben estar conectados a los pines físicos 2 y 3, las interrupciones para el botón son del tipo "change", ya que me interesan tanto el flanco de subida como el de bajada para medir el tiempo de pulsado. En el caso del joystick, la interrupción es solo en el flanco de bajada, ya que solo me interesa el clic.</p>
@@ -118,6 +112,11 @@
         <div class="section">
             <h2>5. Entradas y Salidas Digitales</h2>
             <p>He utilizado todas las entradas digitales para los componentes, excepto para el joystick (que utiliza parte de los potenciómetros y un LED). Esto se debió a que no podía conectarlo a un pin digital. Fue interesante comprobar que las entradas digitales, aunque cuentan con un ADC para leer valores analógicos, se comportan como salidas digitales. Para emular una salida analógica, utilizamos PWM en los pines digitales, lo que nos ha permitido simular el LED que representa la preparación progresiva del café o de otros productos.</p>
+        </div>
+        <div class="link-container">
+            <a href="https://www.dropbox.com/scl/fi/d2fmhvicaarnzbaxp98q6/resultado_p3.mp4?rlkey=6sfvnkcqr1b9f9w2v4311osy5&st=zfmcklaa&dl=0" target="_blank">
+                Ver video del resultado de la práctica
+            </a>
         </div>
         <div class="section">
             <p class="small-text">Creado por Álvaro Quintana</p>

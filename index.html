@@ -1,1 +1,92 @@
-Hello World
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Máquina Expendedora con Arduino Elegoo</title>
+    <style>
+        body {
+            background-color: #2e2e2e;
+            color: #f1f1f1;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        h1, h2, h3 {
+            color: #ff6347;
+        }
+        p {
+            line-height: 1.6;
+        }
+        ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        li {
+            margin-bottom: 10px;
+        }
+        .highlight {
+            font-weight: bold;
+        }
+        .container {
+            padding: 20px;
+        }
+        .section {
+            margin-bottom: 40px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Proyecto: Simulación de Máquina Expendedora con Arduino Elegoo</h1>
+
+        <div class="section">
+            <h2>1. Componentes</h2>
+            <p>En este proyecto, se busca simular el comportamiento de una máquina expendedora utilizando un Arduino Elegoo (Arduino Uno). Los componentes utilizados son los siguientes:</p>
+            <ul>
+                <li><span class="highlight">Pantalla LCD:</span> Se usa para mostrar el estado del sistema y permitir que el usuario interactúe con la máquina, mostrando información como el estado de la máquina, temperatura, distancia, productos disponibles, entre otros.</li>
+                <li><span class="highlight">Sensor Ultrasonido (HC-SR04):</span> Se utiliza para medir la distancia entre la máquina y el cliente (u otros obstáculos) frente a la máquina, de manera que pueda detectar si un cliente está cerca y ofrecerle un servicio adecuado.</li>
+                <li><span class="highlight">Sensor de temperatura y humedad DHT11:</span> Permite medir las condiciones ambientales de la máquina, como la temperatura y la humedad, para mantener un ambiente óptimo para el funcionamiento.</li>
+                <li><span class="highlight">Joystick:</span> Facilita la navegación a través del menú de la máquina y permite realizar selecciones de manera sencilla.</li>
+                <li><span class="highlight">LEDs:</span> Funcionan como indicadores del estado de la máquina y simulan el funcionamiento de algunos actuadores, como los necesarios para preparar café.</li>
+                <li><span class="highlight">Botones de entrada:</span> Se utilizan para realizar configuraciones específicas, como el reinicio del sistema o el cambio al modo administrador.</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>2. Organización del Código</h2>
+            <p>He basado el código del sistema en una máquina de estados, ya que el enunciado establecía de manera muy clara cuáles debían ser estos estados. Este enfoque me ha resultado muy útil para gestionar el watchdog, ya que el bucle principal siempre se ejecuta de forma constante, independientemente del estado en el que se encuentre la máquina. Además, me ha permitido reutilizar muchos de estos estados con pequeñas modificaciones, dependiendo del modo en el que nos encontremos, ya sea como administrador o usuario. Los estados que he elegido son:</p>
+            <ul>
+                <li><span class="highlight">BOOTING_STATE:</span> Estado de inicio donde la máquina carga los sistemas.</li>
+                <li><span class="highlight">WAITING_CLIENT:</span> Estado donde la máquina espera que un cliente se acerque, lo cual es detectado por el sensor ultrasónico.</li>
+                <li><span class="highlight">SHOWING_DATA:</span> Muestra los datos de temperatura y humedad.</li>
+                <li><span class="highlight">SERVICE_STATE:</span> El usuario selecciona un producto en este estado.</li>
+                <li><span class="highlight">PREPARING_PRODUCT:</span> Estado en el que se prepara el producto solicitado.</li>
+                <li><span class="highlight">PRODUCT_READY:</span> Estado donde el producto está listo para ser retirado.</li>
+                <li><span class="highlight">ADMIN_STATE:</span> Modo administrador, donde se pueden ver datos o modificar precios.</li>
+                <li><span class="highlight">SHOW_DIST_DATA:</span> Muestra la distancia detectada por el sensor ultrasónico.</li>
+                <li><span class="highlight">SHOW_BOARD_TIME:</span> Muestra el tiempo de funcionamiento desde el inicio (uptime).</li>
+            </ul>
+            <p>Las transiciones entre los estados se hacen con la función <span class="highlight">change_state</span>. Otra parte del código a la que he dado especial importancia es a evitar el uso de <span class="highlight">delay()</span> ya que son funciones bloqueantes, y ya conocemos mecanismos para mejorar este comportamiento de espera activa.</p>
+        </div>
+
+        <div class="section">
+            <h2>3. Manejo de Interrupciones</h2>
+            <p>Se han utilizado interrupciones de hardware para detectar cambios en los pines físicos de entrada, como el pin del joystick y el del botón, con el objetivo de evitar el polling y reducir los ciclos de sondeo. Esto no solo ayuda a ahorrar energía, sino que también permite una mayor escalabilidad del código. Para manejar estas interrupciones, se ejecutan dos subrutinas de servicio de interrupción (ISR): <span class="highlight">button_change()</span> y <span class="highlight">joy_pressed()</span>.</p>
+            <p>Gracias a las interrupciones, podemos atender eventos externos sin descuidar el ciclo principal. Dado que los pines de la placa deben estar conectados a los pines físicos 2 y 3, las interrupciones para el botón son del tipo "change", ya que me interesan tanto el flanco de subida como el de bajada para medir el tiempo de pulsado. En el caso del joystick, la interrupción es solo en el flanco de bajada, ya que solo me interesa el clic.</p>
+            <p>Además, se han utilizado interrupciones indirectamente con el uso de <span class="highlight">millis()</span>. En las ISR, se emplean las funciones <span class="highlight">noInterrupts()</span> e <span class="highlight">interrupts()</span> al inicio y al final, respectivamente, para evitar recibir más interrupciones de las que quiero manejar.</p>
+        </div>
+
+        <div class="section">
+            <h2>4. Threads</h2>
+            <p>Como sabemos, esta biblioteca no permite ejecutar procesos en paralelo en Arduino, pero la he utilizado para abstraer el código y evitar repeticiones, así como para mejorar la claridad y reducir la complejidad. He creado dos clases que heredan de <span class="highlight">Thread</span>: <span class="highlight">LedThread</span> y <span class="highlight">JoyStickThread</span>. Podría haber usado otros hilos, como para la pantalla LCD, pero como cada parte del código para el display es un poco diferente, esto complicaba aún más todo. Por lo tanto, he considerado mejor usar la opción <span class="highlight">start_time - millis()</span>, que me ha parecido más adecuada.</p>
+            <p>Estos hilos se instancian como variables globales y se especifica el tiempo de ejecución de su rutina. Al heredar de <span class="highlight">Thread</span>, podemos sobrescribir ciertos métodos para personalizarlos y adaptarlos a lo que necesitamos, añadiendo nuevos atributos o, por ejemplo, modificando el método <span class="highlight">run()</span>, que en ambos casos está modificado para obtener el comportamiento deseado. Los hilos me han permitido mantener el código más limpio y organizado.</p>
+        </div>
+
+        <div class="section">
+            <h2>5. Entradas y Salidas Digitales</h2>
+            <p>He utilizado todas las entradas digitales para los componentes, excepto para el joystick (que utiliza parte de los potenciómetros y un LED). Esto se debió a que no podía conectarlo a un pin digital. Fue interesante comprobar que las entradas digitales, aunque cuentan con un ADC para leer valores analógicos, se comportan como salidas digitales. Para emular una salida analógica, utilizamos PWM en los pines digitales, lo que nos ha permitido simular el LED que representa la preparación progresiva del café o de otros productos.</p>
+        </div>
+    </div>
+</body>
+</html>
